@@ -1,4 +1,4 @@
-O# ZEEK - Localizador Emizor PRO 🚀
+# ZEEK - Localizador Emizor PRO 🚀
 
 Rastreador GPS casero con ESP32, NEO-6M y SIM800L. Proyecto de BlackPanter4 desde Luchanas, Coah.
 
