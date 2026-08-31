@@ -1,4 +1,4 @@
-# ZEEK - Localizador Emizor PRO 🚀
+O# ZEEK - Localizador Emizor PRO 🚀
 
 Rastreador GPS casero con ESP32, NEO-6M y SIM800L. Proyecto de BlackPanter4 desde Luchanas, Coah.
 
@@ -47,3 +47,8 @@ Rastreador GPS casero con ESP32, NEO-6M y SIM800L. Proyecto de BlackPanter4 desd
    ```bash
    python Localizador.py
    # Escuchando en 0.0.0.0:8000
+## Estado Actual
+- [x] Código Python servidor (Localizador.py)
+- [x] Diagrama de conexión
+- [ ] Hardware comprado
+- [ ] Prueba en campo Luchanas
