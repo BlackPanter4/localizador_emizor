@@ -1,1 +1,74 @@
+# tracker_pro.py - ZEEK Rastreio PRO - by Tovanche
+# ESP32 + NEO-6M (GPIO16/17) + SIM800L (GPIO26/27)
+from machine import UART, Pin
+import time
 
+# --- CONFIGURACION TUYA ---
+SERVER_URL = "http://192.168.1.112:8000"
+APN_TELCEL = "internet.itelcel.com"
+
+# UARTs
+gps_uart = UART(2, baudrate=9600, tx=16, rx=17) # NEO-6M
+gsm_uart = UART(1, baudrate=9600, tx=26, rx=27) # SIM800L
+
+led = Pin(2, Pin.OUT)
+
+def send_at(cmd, wait=1):
+    gsm_uart.write((cmd + "\r\n").encode())
+    time.sleep(wait)
+    resp = gsm_uart.read()
+    if resp:
+        print(resp.decode())
+        return resp.decode()
+    return ""
+
+def init_sim800l():
+    print("Iniciando SIM800L...")
+    send_at("AT", 1)
+    send_at("AT+CPIN?", 1)
+    send_at('AT+CSTT="%s"' % APN_TELCEL, 2)
+    send_at("AT+CIICR", 3)
+    send_at("AT+CIFSR", 2)
+    print("SIM800L Listo")
+
+def parse_gps():
+    if gps_uart.any():
+        line = gps_uart.readline().decode('utf-8', 'ignore')
+        if "$GPGGA" in line or "$GPRMC" in line:
+            try:
+                parts = line.split(',')
+                if parts[2] and parts[4]: # tiene fix
+                    # Conversion simple NMEA a grados
+                    lat_raw = float(parts[2][:2]) + float(parts[2][2:]) / 60
+                    if parts[3] == 'S': lat_raw = -lat_raw
+                    lon_raw = float(parts[4][:3]) + float(parts[4][3:]) / 60
+                    if parts[5] == 'W': lon_raw = -lon_raw
+                    return lat_raw, lon_raw
+            except:
+                pass
+    return None, None
+
+def send_location(lat, lon):
+    # Envia a tu Localizador.py
+    url = f'{SERVER_URL}/?lat={lat}&lon={lon}'
+    print(f"Enviando: {url}")
+    send_at('AT+CSTT="%s"' % APN_TELCEL, 1)
+    send_at("AT+CIICR", 2)
+    send_at(f'AT+HTTPPARA="URL","{url}"', 1)
+    send_at("AT+HTTPACTION=0", 3)
+    resp = send_at("AT+HTTPREAD", 2)
+    led.on()
+    time.sleep(0.2)
+    led.off()
+
+# --- LOOP PRINCIPAL ---
+init_sim800l()
+print("ZEEK PRO Iniciado en Luchanas...")
+while True:
+    lat, lon = parse_gps()
+    if lat and lon:
+        print(f"Fix GPS: {lat}, {lon}")
+        send_location(lat, lon)
+    else:
+        print("Buscando GPS...")
+    time.sleep(30) # envia cada 30 seg
